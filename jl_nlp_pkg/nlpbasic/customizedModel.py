@@ -8,7 +8,6 @@ import pandas as pd
 from functools import partial
 from nlpbasic.TextProcessing import TextProcessing
 from scipy.spatial.distance import cosine
-from scipy.spatial.distance import cosine
 
 class customizedTFIDF(object):
 
@@ -55,7 +54,7 @@ class customizedTFIDF(object):
                 tfidf_value.append(value)
         data = {"doc_id": doc_id, "bow": bow, "tfidf_value": tfidf_value}
         data = pd.DataFrame(data)
-        return (data)
+        return data
 
     def get_top_n_tfidf_bow(data, multi_gram, stem_lemma = '', tag_drop =[],
                             ngram_tag_drop = False, no_below = 5,
@@ -176,3 +175,5 @@ class customizedLDA(object):
         toptopic = toptopic.applymap(lambda x: re.search('"(.*)"', x).group(1))
         toptopic.insert(0, 'Topics', toptopic.index + 1)
         return toptopic
+
+

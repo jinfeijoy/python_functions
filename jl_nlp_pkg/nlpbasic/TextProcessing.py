@@ -1,4 +1,7 @@
 import string
+import gensim
+import pandas as pd
+import numpy as np
 from nltk.corpus import stopwords
 from nltk.corpus import wordnet
 from nltk.tokenize import word_tokenize
@@ -6,7 +9,7 @@ from nltk import ngrams
 from nltk import pos_tag
 from nltk.stem.porter import PorterStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
-
+from functools import partial
 
 class TextProcessing(object):
 
@@ -109,3 +112,63 @@ class TextProcessing(object):
                     vocab.append(token[i])
         return vocab
 
+
+class DocVector(object):
+    def __init__(self):
+        pass
+
+    def get_vocab(tokens):
+        '''
+        this function is to get vocabulary
+        :return: list of vocabulary
+        '''
+        vocab = []
+        total_words = 0
+        for token in tokens:
+            total_words = total_words + len(token)
+            for i in range(len(token)):
+                if token[i] not in vocab:
+                    vocab.append(token[i])
+        return vocab
+
+    def generate_corpus_dict(data,multi_gram, stem_lemma = '', tag_drop =[],
+                            ngram_tag_drop = False, no_below =5,
+                            no_above = 0.5, keep_n = 100000):
+        """
+        :param data: the document column in dataset to be calculate tfidf, eg data['doc']
+        :param multi_gram: multiple gram list, e.g. [1,2,3] indicate to output 1 2 and 3 grams tokens
+        :param stem_lemma: do stemmer or lemmatizer or nothing processing, e.g. 'stem', 'lemma', ''
+        :param tag_drop: whether to drop word with specific tag: J--objective, N--noun, V--verb, R--adv. e.g. ['J'], ['J','N']
+        :param ngram_tag_drop: True: drop words with specific tag in n-gram, False: keep all words when generate n-gram tokens
+        :param no_below: filter out tokens that less than no_below documents (absolute number)
+        :param no_above: filter out tokens that more than no_above documents (fraction of total corpus size, not absolute number).
+        :param keep_n: filter out tokens that after (1) and (2), keep only the first keep_n most frequent tokens (or keep all if None).
+        :return: bow corpus, dictionary
+        """
+        processed_docs = data.map(
+            partial(TextProcessing.find_multiple_gram_tokens,
+                    multi_gram=multi_gram,
+                    stem_lemma=stem_lemma,
+                    tag_drop=tag_drop,
+                    ngram_tag_drop=ngram_tag_drop
+                    )
+        )
+        dictionary = gensim.corpora.Dictionary(processed_docs)
+        dictionary.filter_extremes(no_below=no_below,
+                                   no_above=no_above,
+                                   keep_n=keep_n)
+        bow_corpus = [dictionary.doc2bow(doc) for doc in processed_docs]
+        return bow_corpus, dictionary
+
+    def get_vocab_matrix(document_vector, vocabulary):
+        """
+        :param document_vector: bow_corpus generated from generate_corpus_dict
+        :param vocabulary: dictionary generated from generate_corpus_dict
+        :return: term document matrix
+        """
+        my_matrix = pd.DataFrame(0.0, index=np.arange(len(document_vector)), columns=[i for i in vocabulary.values()])
+        for i in range(len(document_vector)):
+            for j in range(len(document_vector[i])):
+                my_matrix.at[i, vocabulary[document_vector[i][j][0]]] = document_vector[i][j][1]
+        my_matrix.index.name = 'doc'
+        return my_matrix
