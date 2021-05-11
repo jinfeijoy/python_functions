@@ -131,7 +131,7 @@ class DocVector(object):
                     vocab.append(token[i])
         return vocab
 
-    def generate_corpus_dict(data,multi_gram, stem_lemma = '', tag_drop =[],
+    def generate_corpus_dict(data, multi_gram, stem_lemma = '', tag_drop =[],
                             ngram_tag_drop = False, no_below =5,
                             no_above = 0.5, keep_n = 100000):
         """
