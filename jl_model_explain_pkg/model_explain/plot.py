@@ -2,6 +2,16 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 import numpy as np
 
+class confusionMatrix(object):
+    def __init__(self):
+        pass
+    def heatmap(cf_matrix):
+        group_names = ['True Neg', 'False Pos', 'False Neg', 'True Pos']
+        group_counts = ['{0:0.0f}'.format(value) for value in cf_matrix.flatten()]
+        labels = [f"{v1}\n{v2}" for v1, v2 in zip(group_names, group_counts)]
+        labels = np.asarray(labels).reshape(2, 2)
+        sb.heatmap(cf_matrix, annot=labels, fmt='', cmap='Blues', annot_kws={'fontsize': 16})
+
 class VariableImportancePlot(object):
     def __init__(self):
         pass
