@@ -9,6 +9,7 @@ from nltk import ngrams
 from nltk import pos_tag
 from nltk.stem.porter import PorterStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
+from gensim import corpora
 
 class TextProcessing(object):
 
@@ -141,6 +142,24 @@ class DocVector(object):
                     vocab.append(token[i])
         return vocab
 
+    # def dictionary_helper(dictionary, tokenized_corpus, compact, remove_rare):
+    #     dictionary.add_documents(tokenized_corpus)
+    #     if remove_rare:
+    #         once_ids = [tokenid for tokenid, docfreq in dictionary.dfs.items() if docfreq == 1]
+    #         dictionary.filter_tokens(once_ids)
+    #
+    #     if compact:
+    #         dictionary.compactify()
+    #     return dictionary
+    #
+    # def create_dictionary(tokenized_corpus, compact = True, remove_rare = False):
+    #     if not(isinstance(tokenized_corpus, list) and isinstance(tokenized_corpus[0], list)):
+    #         raise TypeError('Input should be a list of lists!')
+    #
+    #     dictionary = corpora.Dictionary()
+    #     dictionary = DocVector.dictionary_helper(dictionary, tokenized_corpus, compact, remove_rare)
+    #     return dictionary
+
 
     def generate_corpus_dict(corpus, no_below =5,
                             no_above = 0.5, keep_n = 100000):
@@ -155,8 +174,25 @@ class DocVector(object):
         dictionary.filter_extremes(no_below=no_below,
                                    no_above=no_above,
                                    keep_n=keep_n)
+        return dictionary
+
+    def create_document_vector(corpus, dictionary):
+        """
+        :param corpus: corpus generated from doc_tokenize()
+        :param dictionary: dictionary generated from generate_corpus_dict()
+        :return:
+        """
         bow_corpus = [dictionary.doc2bow(doc) for doc in corpus]
-        return bow_corpus, dictionary
+        return bow_corpus
+
+    def create_corpus_vector(corpus, dictionary):
+        """
+        :param corpus: corpus generated from doc_tokenize()
+        :param dictionary:
+        :return:
+        """
+        return [DocVector.create_document_vector(doc, dictionary) for doc in corpus]
+
 
     def get_vocab_matrix(document_vector, vocabulary):
         """
