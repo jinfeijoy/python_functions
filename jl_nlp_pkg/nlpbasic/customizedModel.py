@@ -1,12 +1,7 @@
 import gensim
-from gensim.utils import simple_preprocess
-from gensim.parsing.preprocessing import STOPWORDS
 from gensim.models import TfidfModel
-from nltk.stem import WordNetLemmatizer, SnowballStemmer
 from nltk.stem.porter import *
 import pandas as pd
-from functools import partial
-from nlpbasic.TextProcessing import TextProcessing
 from scipy.spatial.distance import cosine
 
 class customizedTFIDF(object):
@@ -14,29 +9,17 @@ class customizedTFIDF(object):
     def __init__(self):
         pass
 
-    def get_tfidf_dataframe(data, multi_gram, stem_lemma = '', tag_drop =[],
-                            ngram_tag_drop = False, no_below =5,
+    def get_tfidf_dataframe(corpus, no_below =5,
                             no_above = 0.5, keep_n = 100000):
         """
-        :param data: the document column in dataset to be calculate tfidf, eg data['doc']
-        :param multi_gram: multiple gram list, e.g. [1,2,3] indicate to output 1 2 and 3 grams tokens
-        :param stem_lemma: do stemmer or lemmatizer or nothing processing, e.g. 'stem', 'lemma', ''
-        :param tag_drop: whether to drop word with specific tag: J--objective, N--noun, V--verb, R--adv. e.g. ['J'], ['J','N']
-        :param ngram_tag_drop: True: drop words with specific tag in n-gram, False: keep all words when generate n-gram tokens
+        :param corpus: corpus generated from doc_tokenize()
         :param no_below: filter out tokens that less than no_below documents (absolute number)
         :param no_above: filter out tokens that more than no_above documents (fraction of total corpus size, not absolute number).
         :param keep_n: filter out tokens that after (1) and (2), keep only the first keep_n most frequent tokens (or keep all if None).
         :return: tfidf dataframe with document id, bag of words and tfidf value
         """
 
-        processed_docs = data.map(
-            partial(TextProcessing.find_multiple_gram_tokens,
-                    multi_gram=multi_gram,
-                    stem_lemma=stem_lemma,
-                    tag_drop=tag_drop,
-                    ngram_tag_drop = ngram_tag_drop
-                    )
-        )
+        processed_docs = corpus
         dictionary = gensim.corpora.Dictionary(processed_docs)
         dictionary.filter_extremes(no_below=no_below,
                                    no_above=no_above,
@@ -56,23 +39,17 @@ class customizedTFIDF(object):
         data = pd.DataFrame(data)
         return data
 
-    def get_top_n_tfidf_bow(data, multi_gram, stem_lemma = '', tag_drop =[],
-                            ngram_tag_drop = False, no_below = 5,
+    def get_top_n_tfidf_bow(corpus, no_below = 5,
                             no_above = 0.5, keep_n = 100000, top_n_tokens = 100000):
         """
-        :param data: the document column in dataset to be calculate tfidf, eg data['doc']
-        :param multi_gram: multiple gram list, e.g. [1,2,3] indicate to output 1 2 and 3 grams tokens
-        :param stem_lemma: do stemmer or lemmatizer or nothing processing, e.g. 'stem', 'lemma', ''
-        :param tag_drop: whether to drop word with specific tag: J--objective, N--noun, V--verb, R--adv. e.g. ['J'], ['J','N']
-        :param ngram_tag_drop: True: drop words with specific tag in n-gram, False: keep all words when generate n-gram tokens
+        :param corpus: corpus generated from doc_tokenize()
         :param no_below: filter out tokens that less than no_below documents (absolute number)
         :param no_above: filter out tokens that more than no_above documents (fraction of total corpus size, not absolute number).
         :param keep_n: filter out tokens that after (1) and (2), keep only the first keep_n most frequent tokens (or keep all if None).
         :param top_n_tokens: top n bag of words in tfidf global list
         :return: a list of tokens with global top n tfidf value
         """
-        tmp_data = customizedTFIDF.get_tfidf_dataframe(data, multi_gram, stem_lemma , tag_drop ,
-                                                       ngram_tag_drop , no_below , no_above , keep_n)
+        tmp_data = customizedTFIDF.get_tfidf_dataframe(corpus, no_below = no_below, no_above = no_above, keep_n = keep_n)
         tfidf_max_value = tmp_data.groupby('bow')['tfidf_value'].nlargest(1).reset_index(drop=False).sort_values(
             by='tfidf_value', ascending=False)
         output_list = tfidf_max_value.head(top_n_tokens).bow.tolist()
@@ -115,15 +92,9 @@ class customizedLDA(object):
         for i in range(len(text)):
             print("Word {} (\"{}\") appears {} time.".format(text[i][0], dictionary[text[i][0]], text[i][1]))
 
-    def fit_lda(data, multi_gram, stem_lemma = '', tag_drop =[],
-                ngram_tag_drop = False, no_below = 5,
-                no_above = 0.5, keep_n = 100000, top_n_tokens = 100000, num_topics = 5):
+    def fit_lda(corpus, no_below = 5, no_above = 0.5, keep_n = 100000, top_n_tokens = '', num_topics = 5):
         """
-        :param data: the document column in dataset to be calculate tfidf, eg data['doc']
-        :param multi_gram: multiple gram list, e.g. [1,2,3] indicate to output 1 2 and 3 grams tokens
-        :param stem_lemma: do stemmer or lemmatizer or nothing processing, e.g. 'stem', 'lemma', ''
-        :param tag_drop: whether to drop word with specific tag: J--objective, N--noun, V--verb, R--adv. e.g. ['J'], ['J','N']
-        :param ngram_tag_drop: True: drop words with specific tag in n-gram, False: keep all words when generate n-gram tokens
+        :param corpus: corpus generated from doc_tokenize()
         :param no_below: filter out tokens that less than no_below documents (absolute number)
         :param no_above: filter out tokens that more than no_above documents (fraction of total corpus size, not absolute number).
         :param keep_n: filter out tokens that after (1) and (2), keep only the first keep_n most frequent tokens (or keep all if None).
@@ -132,21 +103,10 @@ class customizedLDA(object):
         :return: lda model file, bow_corpus, dictionary
         """
         if top_n_tokens == '':
-            processed_docs = data.map(
-                partial(TextProcessing.find_multiple_gram_tokens,
-                        multi_gram=multi_gram,
-                        stem_lemma=stem_lemma,
-                        tag_drop=tag_drop,
-                        ngram_tag_drop = ngram_tag_drop))
+            processed_docs = corpus
         else:
-            selected_tokens = customizedTFIDF.get_top_n_tfidf_bow(data, multi_gram, stem_lemma, tag_drop,
-                                                  ngram_tag_drop, no_below, no_above, keep_n, top_n_tokens)
-            processed_docs = data.map(partial(TextProcessing.keep_specific_tokens,
-                                              multi_gram=multi_gram,
-                                              stem_lemma=stem_lemma,
-                                              tag_drop=tag_drop,
-                                              ngram_tag_drop=ngram_tag_drop,
-                                              selected_tokens=selected_tokens))
+            selected_tokens = customizedTFIDF.get_top_n_tfidf_bow(corpus, no_below, no_above, keep_n, top_n_tokens)
+            processed_docs = [list(i for i in token if i in selected_tokens) for token in corpus]
         dictionary = gensim.corpora.Dictionary(processed_docs)
         dictionary.filter_extremes(no_below=no_below, no_above=no_above,
                                    keep_n=keep_n)
@@ -158,6 +118,7 @@ class customizedLDA(object):
                                                workers=2,
                                                random_state=100)
         return lda_model, bow_corpus, dictionary
+
 
     def lda_topics(lda_model):
         """

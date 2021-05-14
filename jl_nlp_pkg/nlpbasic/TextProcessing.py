@@ -9,7 +9,6 @@ from nltk import ngrams
 from nltk import pos_tag
 from nltk.stem.porter import PorterStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
-from functools import partial
 
 class TextProcessing(object):
 
@@ -38,12 +37,13 @@ class TextProcessing(object):
         return word_output
 
 
-    def find_tokens(example, ngram = 1, stem_lemma = '', tag_drop = [], ngram_tag_drop = False):
+    def find_tokens(example, ngram = 1, stem_lemma = '', tag_drop = [], ngram_tag_drop = False, user_defined_stopwords = []):
         '''
         this function is to generate n-gram tokens given a sentence/document
         :param ngram: n-gram to included in tokens, e.g. 1, 2
         :param stem_lemma: do stemmer or lemmatizer or nothing processing, e.g. 'stem', 'lemma', ''
         :param tag_drop: whether to drop word with specific tag: J--objective, N--noun, V--verb, R--adv. e.g. ['J'], ['J','N']
+        :param user_defined_stopwords: user defined stopwords
         :return: return a list of tokens
         :ngram_tag_drop: True: drop words with specific tag in n-gram, False: keep all words when generate n-gram tokens
         '''
@@ -54,7 +54,7 @@ class TextProcessing(object):
         if ngram == 1:
             word_tokens = [t[0] for t in pos_tag(word_tokenize(example)) if t[1][0] not in tag_drop]
             for w in word_tokens:
-                if w not in stop_words:
+                if w not in stop_words and w not in user_defined_stopwords:
                     if w.isdigit() == False:
                         filtered_sentence.append(TextProcessing.stem_lemma_process(w, stem_lemma = stem_lemma))
         else:
@@ -63,7 +63,7 @@ class TextProcessing(object):
             if ngram_tag_drop == False:
                 word_tokens = word_tokenize(example)
             for w in word_tokens:
-                if w not in stop_words:
+                if w not in stop_words and w not in user_defined_stopwords:
                     if w.isdigit() == False:
                         tmp_sentence.append(TextProcessing.stem_lemma_process(w, stem_lemma = stem_lemma))
             n_grams = ngrams(tmp_sentence, ngram)
@@ -71,46 +71,56 @@ class TextProcessing(object):
                 filtered_sentence.append(" ".join(grams))
         return filtered_sentence
 
-    def find_multiple_gram_tokens(examples, multi_gram, stem_lemma = '', tag_drop = [], ngram_tag_drop = False):
+    def find_multiple_gram_tokens(examples, multi_gram, stem_lemma = '', tag_drop = [], ngram_tag_drop = False, user_defined_stopwords = []):
         '''
         :param multi_gram: multiple gram list, e.g. [1,2,3] indicate to output 1 2 and 3 grams tokens
         :param stem_lemma: do stemmer or lemmatizer or nothing processing, e.g. 'stem', 'lemma', ''
         :param tag_drop: whether to drop word with specific tag: J--objective, N--noun, V--verb, R--adv. e.g. ['J'], ['J','N']
         :param ngram_tag_drop: True: drop words with specific tag in n-gram, False: keep all words when generate n-gram tokens
+        :param user_defined_stopwords: user defined stopwords
         :return: return a list of tokens
        '''
         multi_tokens = []
         for i in multi_gram:
-            multi_tmp_tokens = TextProcessing.find_tokens(examples, i, stem_lemma, tag_drop, ngram_tag_drop = ngram_tag_drop)
+            multi_tmp_tokens = TextProcessing.find_tokens(examples, i, stem_lemma, tag_drop,
+                                                          ngram_tag_drop = ngram_tag_drop, user_defined_stopwords = user_defined_stopwords)
             multi_tokens.extend(multi_tmp_tokens)
         return multi_tokens
 
-    def keep_specific_tokens(examples, multi_gram, stem_lemma = '', tag_drop = [], ngram_tag_drop = False, selected_tokens = []):
+    def keep_specific_tokens(corpus, selected_tokens = []):
         """
+        :param corpus: tokens generated from multi_gram
+        :param selected_tokens: list of tokens we want to keep in "examples"
+        :return: tokens
+        """
+        return [i for i in corpus if i in selected_tokens]
+
+    def doc_tokenize(data, multi_gram, stem_lemma = '', tag_drop = [], ngram_tag_drop = False,
+                     user_defined_stopwords = [] ,keep_tokens = []):
+        """
+        :param data: data column, eg. data['review']
         :param multi_gram: multiple gram list, e.g. [1,2,3] indicate to output 1 2 and 3 grams tokens
         :param stem_lemma: do stemmer or lemmatizer or nothing processing, e.g. 'stem', 'lemma', ''
         :param tag_drop: whether to drop word with specific tag: J--objective, N--noun, V--verb, R--adv. e.g. ['J'], ['J','N']
         :param ngram_tag_drop: True: drop words with specific tag in n-gram, False: keep all words when generate n-gram tokens
-        :param selected_tokens: list of tokens we want to keep in "examples"
-        :return: tokens
+        :param user_defined_stopwords: user defined stopwords
+        :param keep_tokens: list of tokens we want to keep in "examples"
+        :return: return a list of tokens
         """
-        tmp_tokens = TextProcessing.find_multiple_gram_tokens(examples, multi_gram, stem_lemma, tag_drop, ngram_tag_drop)
-        tmp_tokens = [i for i in tmp_tokens if i in selected_tokens]
-        return tmp_tokens
+        if len(keep_tokens) == 0:
+            return [list(TextProcessing.find_multiple_gram_tokens(doc, multi_gram, stem_lemma = stem_lemma,
+                                                                  tag_drop = tag_drop, ngram_tag_drop = ngram_tag_drop,
+                                                                  user_defined_stopwords = user_defined_stopwords)
+                         ) for doc in data]
+        else:
+            return [list(TextProcessing.keep_specific_tokens(TextProcessing.find_multiple_gram_tokens(doc, multi_gram,
+                                                                                                      stem_lemma=stem_lemma,
+                                                                                                      tag_drop=tag_drop,
+                                                                                                      ngram_tag_drop=ngram_tag_drop,
+                                                                                                      user_defined_stopwords = user_defined_stopwords),
+                                                             selected_tokens=keep_tokens)
+                         ) for doc in data]
 
-    def get_vocab(tokens):
-        '''
-        this function is to get vocabulary
-        :return: list of vocabulary
-        '''
-        vocab = []
-        total_words = 0
-        for token in tokens:
-            total_words = total_words + len(token)
-            for i in range(len(token)):
-                if token[i] not in vocab:
-                    vocab.append(token[i])
-        return vocab
 
 
 class DocVector(object):
@@ -131,33 +141,21 @@ class DocVector(object):
                     vocab.append(token[i])
         return vocab
 
-    def generate_corpus_dict(data, multi_gram, stem_lemma = '', tag_drop =[],
-                            ngram_tag_drop = False, no_below =5,
+
+    def generate_corpus_dict(corpus, no_below =5,
                             no_above = 0.5, keep_n = 100000):
         """
-        :param data: the document column in dataset to be calculate tfidf, eg data['doc']
-        :param multi_gram: multiple gram list, e.g. [1,2,3] indicate to output 1 2 and 3 grams tokens
-        :param stem_lemma: do stemmer or lemmatizer or nothing processing, e.g. 'stem', 'lemma', ''
-        :param tag_drop: whether to drop word with specific tag: J--objective, N--noun, V--verb, R--adv. e.g. ['J'], ['J','N']
-        :param ngram_tag_drop: True: drop words with specific tag in n-gram, False: keep all words when generate n-gram tokens
+        :param corpus: corpus generated from doc_tokenize()
         :param no_below: filter out tokens that less than no_below documents (absolute number)
         :param no_above: filter out tokens that more than no_above documents (fraction of total corpus size, not absolute number).
         :param keep_n: filter out tokens that after (1) and (2), keep only the first keep_n most frequent tokens (or keep all if None).
         :return: bow corpus, dictionary
         """
-        processed_docs = data.map(
-            partial(TextProcessing.find_multiple_gram_tokens,
-                    multi_gram=multi_gram,
-                    stem_lemma=stem_lemma,
-                    tag_drop=tag_drop,
-                    ngram_tag_drop=ngram_tag_drop
-                    )
-        )
-        dictionary = gensim.corpora.Dictionary(processed_docs)
+        dictionary = gensim.corpora.Dictionary(corpus)
         dictionary.filter_extremes(no_below=no_below,
                                    no_above=no_above,
                                    keep_n=keep_n)
-        bow_corpus = [dictionary.doc2bow(doc) for doc in processed_docs]
+        bow_corpus = [dictionary.doc2bow(doc) for doc in corpus]
         return bow_corpus, dictionary
 
     def get_vocab_matrix(document_vector, vocabulary):
