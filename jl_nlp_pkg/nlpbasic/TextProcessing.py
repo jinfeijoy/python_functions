@@ -1,7 +1,4 @@
 import string
-import gensim
-import pandas as pd
-import numpy as np
 from nltk.corpus import stopwords
 from nltk.corpus import wordnet
 from nltk.tokenize import word_tokenize
@@ -16,7 +13,7 @@ class TextProcessing(object):
     def __init__(self):
         pass
 
-    def get_wordnet_pos(word):
+    def get_wordnet_pos(self, word):
         tag = pos_tag([word])[0][1][0].upper()
         tag_dict = {
             "J": wordnet.ADJ, "N": wordnet.NOUN,
@@ -124,85 +121,3 @@ class TextProcessing(object):
 
 
 
-class DocVector(object):
-    def __init__(self):
-        pass
-
-    def get_vocab(tokens):
-        '''
-        this function is to get vocabulary
-        :return: list of vocabulary
-        '''
-        vocab = []
-        total_words = 0
-        for token in tokens:
-            total_words = total_words + len(token)
-            for i in range(len(token)):
-                if token[i] not in vocab:
-                    vocab.append(token[i])
-        return vocab
-
-    # def dictionary_helper(dictionary, tokenized_corpus, compact, remove_rare):
-    #     dictionary.add_documents(tokenized_corpus)
-    #     if remove_rare:
-    #         once_ids = [tokenid for tokenid, docfreq in dictionary.dfs.items() if docfreq == 1]
-    #         dictionary.filter_tokens(once_ids)
-    #
-    #     if compact:
-    #         dictionary.compactify()
-    #     return dictionary
-    #
-    # def create_dictionary(tokenized_corpus, compact = True, remove_rare = False):
-    #     if not(isinstance(tokenized_corpus, list) and isinstance(tokenized_corpus[0], list)):
-    #         raise TypeError('Input should be a list of lists!')
-    #
-    #     dictionary = corpora.Dictionary()
-    #     dictionary = DocVector.dictionary_helper(dictionary, tokenized_corpus, compact, remove_rare)
-    #     return dictionary
-
-
-    def generate_corpus_dict(corpus, no_below =5,
-                            no_above = 0.5, keep_n = 100000):
-        """
-        :param corpus: corpus generated from doc_tokenize()
-        :param no_below: filter out tokens that less than no_below documents (absolute number)
-        :param no_above: filter out tokens that more than no_above documents (fraction of total corpus size, not absolute number).
-        :param keep_n: filter out tokens that after (1) and (2), keep only the first keep_n most frequent tokens (or keep all if None).
-        :return: bow corpus, dictionary
-        """
-        dictionary = gensim.corpora.Dictionary(corpus)
-        dictionary.filter_extremes(no_below=no_below,
-                                   no_above=no_above,
-                                   keep_n=keep_n)
-        return dictionary
-
-    def create_document_vector(corpus, dictionary):
-        """
-        :param corpus: corpus generated from doc_tokenize()
-        :param dictionary: dictionary generated from generate_corpus_dict()
-        :return:
-        """
-        bow_corpus = [dictionary.doc2bow(doc) for doc in corpus]
-        return bow_corpus
-
-    def create_corpus_vector(corpus, dictionary):
-        """
-        :param corpus: corpus generated from doc_tokenize()
-        :param dictionary:
-        :return:
-        """
-        return [DocVector.create_document_vector(doc, dictionary) for doc in corpus]
-
-
-    def get_vocab_matrix(document_vector, vocabulary):
-        """
-        :param document_vector: bow_corpus generated from generate_corpus_dict
-        :param vocabulary: dictionary generated from generate_corpus_dict
-        :return: term document matrix
-        """
-        my_matrix = pd.DataFrame(0.0, index=np.arange(len(document_vector)), columns=[i for i in vocabulary.values()])
-        for i in range(len(document_vector)):
-            for j in range(len(document_vector[i])):
-                my_matrix.at[i, vocabulary[document_vector[i][j][0]]] = document_vector[i][j][1]
-        my_matrix.index.name = 'doc'
-        return my_matrix
