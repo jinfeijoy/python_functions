@@ -47,12 +47,14 @@ def plot_var_imp(feature_importances, column_name, topn = 20):
     plt.ylabel("Features")
     plt.yticks(fontsize=16)
 
-def plot_var_imp_both_side(X, Y, column_name, raw_data, feature_importances, topn = 20):
+def plot_var_imp_both_side(X, Y, column_name, raw_data, feature_importances,
+                           y_name = 'label', topn = 20):
     """
     :param X: input variables data
     :param Y: target variables data
     :param column_name: column name in dataset: e.g. data.columns
     :param raw_data: raw_data that include all variables and all records
+    :param y_name: target variable name in raw_data
     :param feature_importances: feature importance from model
     :param topn: top n importance variables
     :return:
@@ -62,7 +64,7 @@ def plot_var_imp_both_side(X, Y, column_name, raw_data, feature_importances, top
     features = {}
     for c in set(Y):
         features[c] = dict(
-            zip(range(N), np.mean(X[raw_data['label'] == c], axis=0) * feature_importances)
+            zip(range(N), np.mean(X[raw_data[y_name] == c], axis=0) * feature_importances)
         )
     y_axis = [i for i in column_name]
     x_axis = feature_importances
