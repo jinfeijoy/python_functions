@@ -6,22 +6,35 @@ from nltk import ngrams
 from itertools import groupby
 from nltk.tag import pos_tag
 from nltk.corpus import stopwords
+import re
 
+def get_hashtag(examples):
+    return re.findall(r"#(\w+)", examples)
 
+def remove_string_startwith(text_data, txt_start):
+    return re.sub(r"{}\S+".format(txt_start), "", text_data)
 
-def doc_tokenize(examples, ngram=1, nltk_stop = True, stop_word_list = [],
+def doc_tokenize(examples, ngram=1, nltk_stop = True, stop_word_list = [], remove_pattern = [],
                  lower_case = False, deacc = False, encoding = 'utf8', errors = 'strict'):
     """
     :param examples: sentence
     :param ngram: number of gram bag of words
     :param nltk_stop: Ture or False, to remove nltk stop words
     :param stop_word_list: user defined stop words list
+    :param remove_pattern: to remove string after [""], default value is []
     :param lower_case: lowercase the input string or not
     :param deacc: (bool, optional) -- Remove accentuation using decaccent
     :param encoding:
     :param errors:
     :return: list of lists of tokenized documents
     """
+    if len(remove_pattern) == 0:
+        examples = examples
+    elif len(remove_pattern) > 0:
+         for i in range(0, len(remove_pattern)):
+            examples = remove_string_startwith(examples, remove_pattern[i])
+
+
     stop_words = []
     if nltk_stop:
         stop_words = list(stopwords.words('english'))
@@ -50,13 +63,14 @@ def doc_tokenize(examples, ngram=1, nltk_stop = True, stop_word_list = [],
 
 
 
-def doc_tokenize_multi_gram(corpus, multi_gram, nltk_stop = True, stop_word_list = [],
+def doc_tokenize_multi_gram(corpus, multi_gram, nltk_stop = True, stop_word_list = [], remove_pattern = [],
                             lower_case = False, deacc = False, encoding = 'utf8', errors = 'strict'):
     '''
     :param corpus: list of strings -- input list of documents
     :param multi_gram: multiple gram list, e.g. [1,2,3] indicate to output 1 2 and 3 grams tokens
     :param nltk_stop: Ture or False, to remove nltk stop words
     :param stop_word_list: user defined stop words list
+    :param remove_pattern: to remove string after [""], default value is []
     :param lower_case: lowercase the input string or not
     :param deacc: (bool, optional) -- Remove accentuation using decaccent
     :param encoding:
@@ -72,6 +86,7 @@ def doc_tokenize_multi_gram(corpus, multi_gram, nltk_stop = True, stop_word_list
         multi_tokens = []
         for ngram in multi_gram:
             multi_tmp_tokens = doc_tokenize(examples=doc, ngram=ngram, nltk_stop = nltk_stop, stop_word_list = stop_word_list,
+                                            remove_pattern=remove_pattern,
                                             lower_case = lower_case, deacc = deacc, encoding = encoding, errors=errors)
             multi_tokens.extend(multi_tmp_tokens)
         output.append(multi_tokens)
@@ -149,7 +164,7 @@ def remove_invalid_tokens(tokenzied_corpus,
 
     return [clean_document(doc) for doc in tokenzied_corpus]
 
-def pipeline(corpus, multi_gram= [1], nltk_stop = True, stop_word_list = [],
+def pipeline(corpus, multi_gram= [1], nltk_stop = True, stop_word_list = [], remove_pattern = [],
              lower_case = False, deacc = False, encoding = 'utf8', errors = 'strict',
              stem_lemma = '', tag_drop = [], check_numbers = True, word_length = 0,
              remove_consecutives = False):
@@ -157,6 +172,9 @@ def pipeline(corpus, multi_gram= [1], nltk_stop = True, stop_word_list = [],
     doc_tokenize parameters:
     :param corpus: list of strings -- input list of documents
     :param ngram: number of gram bag of words
+    :param nltk_stop: Ture or False, to remove nltk stop words
+    :param stop_word_list: user defined stop words list
+    :param remove_pattern: to remove string after [""], default value is []
     :param lower_case: lowercase the input string or not
     :param deacc: (bool, optional) -- Remove accentuation using decaccent
     :param encoding:
@@ -166,8 +184,6 @@ def pipeline(corpus, multi_gram= [1], nltk_stop = True, stop_word_list = [],
     :param stem_lemma: function to stem/lemma documents, should be '' or 'stem' or 'lemma'
 
     remove_invalid_tokens parameters:
-    :param nltk_stop: Ture or False, to remove nltk stop words
-    :param stop_word_list: user defined stop words list
     :param check_numbers: Ture or False to remove numbers from tokens
     :param word_length: integer, to filter out word with len(word) less than word_length
     :param remove_consecutives: remove consecutive occurrences of some word
@@ -178,6 +194,7 @@ def pipeline(corpus, multi_gram= [1], nltk_stop = True, stop_word_list = [],
         raise TypeError('Input should be a list of strings')
 
     result = doc_tokenize_multi_gram(corpus, multi_gram=multi_gram, nltk_stop = nltk_stop, stop_word_list = stop_word_list,
+                                     remove_pattern = remove_pattern,
                                      lower_case = lower_case, deacc = deacc, encoding = encoding, errors = errors)
     result = stem_lemma_process(result, stem_lemma = stem_lemma)
     result = remove_pos_token(result, tag_drop = tag_drop)
