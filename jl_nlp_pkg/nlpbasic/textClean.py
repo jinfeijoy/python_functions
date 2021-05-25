@@ -41,8 +41,8 @@ def doc_tokenize(examples, ngram=1, nltk_stop = True, stop_word_list = [], remov
     if not isinstance(stop_word_list, list):
         raise TypeError('Input should be a list of stopwords')
     stop_words.extend(stop_word_list)
-    if len(stop_words) < 1:
-        print("No Stopwords Provided!")
+    # if len(stop_words) < 1:
+    #     print("No Stopwords Provided!")
 
     filtered_sentence = []
     if ngram == 1:

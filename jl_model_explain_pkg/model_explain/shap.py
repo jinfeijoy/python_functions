@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 shap.initjs()
 
-def get_SHAP_plot(model, X, model_type = 'classification',
+def get_tree_SHAP_plot(model, X, model_type = 'classification',
                   define_index = False, dataset = None,
                   index_var = None, index_value = 0,
                   savefig = False, path = ''):
