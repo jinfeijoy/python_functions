@@ -81,6 +81,7 @@ def generate_word_cloud(corpus):
     stopwords = set(STOPWORDS)
     wordcloud = WordCloud(width=800, height=800,
                           background_color='white',
+                          collocations=False,
                           stopwords=stopwords,
                           min_font_size=10).generate(comment_words)
     # plot the WordCloud image
