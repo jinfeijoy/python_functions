@@ -62,6 +62,8 @@ def generate_bar_proportion(data, feature, group_var, color=0, order=False, asce
     if order == True:
         selected_list = astra_all.sort_values(ascending=ascending).index[0:topn]
         astra_temp = astra_temp[astra_temp.index.isin(selected_list)]
+        astra_temp.index = astra_temp.index.str.strip()
+        astra_temp = astra_temp.reindex(selected_list)
     if order == False:
         astra_temp = astra_temp
 
