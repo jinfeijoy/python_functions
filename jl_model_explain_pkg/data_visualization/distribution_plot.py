@@ -67,7 +67,7 @@ def generate_bar_proportion(data, feature, group_var, color=0, order=False, asce
     if order == False:
         astra_temp = astra_temp
 
-    for i, sents in enumerate(data[feature].value_counts().index):
+    for i, sents in enumerate(astra_temp.columns[::-1]):
         if sents in list(astra_temp.columns):
             sentims = astra_temp[sents]
             ax0.bar(sentims.index, sentims, color=color[i], label=sents)
