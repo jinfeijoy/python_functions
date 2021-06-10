@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 import numpy as np
 
-def plot_count_dist(feature, title, df, size=1, ordered=True):
+def plot_count_dist(feature, title, df, size=1, ordered=True, horizontally=False):
     """
     :param feature: the feature we want to plot (distribution)
     :param title: the feature name shown in the title
@@ -14,23 +14,40 @@ def plot_count_dist(feature, title, df, size=1, ordered=True):
     """
     f, ax = plt.subplots(1,1, figsize=(4*size,4))
     total = float(len(df))
-    if ordered:
-        g = sb.countplot(df[feature], order = df[feature].value_counts().index[:20], palette='Set3')
+    if horizontally:
+        if ordered:
+            g = sb.countplot(y=df[feature], order = df[feature].value_counts().index[:20], palette='Set3')
+        else:
+            g = sb.countplot(y=df[feature], palette='Set3')
+        g.set_title("Number and percentage of {}".format(title))
+        adj_ratio = 2
+        if (size > 2):
+            plt.xticks(rotation=90, size=8)
+            adj_ratio = 1
+        for p in ax.patches:
+            width = p.get_width()
+            ax.text(width+50*adj_ratio,
+                    p.get_y() + p.get_height() / 2.,
+                    '{:1.2f}%'.format(100 * width / total),
+                    ha="center")
     else:
-        g = sb.countplot(df[feature], palette='Set3')
-    g.set_title("Number and percentage of {}".format(title))
-    if(size > 2):
-        plt.xticks(rotation=90, size=8)
-    for p in ax.patches:
-        height = p.get_height()
-        ax.text(p.get_x()+p.get_width()/2.,
-                height,
-                '{:1.2f}%'.format(100*height/total),
-                ha="center")
+        if ordered:
+            g = sb.countplot(df[feature], order = df[feature].value_counts().index[:20], palette='Set3')
+        else:
+            g = sb.countplot(df[feature], palette='Set3')
+        g.set_title("Number and percentage of {}".format(title))
+        if(size > 2):
+            plt.xticks(rotation=90, size=8)
+        for p in ax.patches:
+            height = p.get_height()
+            ax.text(p.get_x()+p.get_width()/2.,
+                    height,
+                    '{:1.2f}%'.format(100*height/total),
+                    ha="center")
     plt.show()
 
 
-def generate_bar_proportion(data, feature, group_var, color=0, order=False, ascending=False, topn=10):
+def generate_bar_proportion(data, feature, group_var, color=0, order=False, ascending=False, topn=10, subtitle = None):
     """
 
     :param data: dataset
@@ -85,7 +102,7 @@ def generate_bar_proportion(data, feature, group_var, color=0, order=False, asce
 
     ax0.text(Xstart, 1.26, feature.title() + ' Over Different ' + group_var.title(), fontweight='bold', fontsize=16,
              zorder=20)
-    #     ax0.text(Xstart,1.125,'sample',fontweight='light', fontsize=14, zorder=20)
+    ax0.text(Xstart,1.125,subtitle,fontweight='light', fontsize=14, zorder=20)
     ax0.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax0.grid()
     plt.show()
