@@ -46,6 +46,53 @@ def plot_count_dist(feature, title, df, size=1, ordered=True, horizontally=False
                     ha="center")
     plt.show()
 
+def bar_plot(x, y, title, df, size=1, ordered=True, horizontally=False):
+    """
+
+    :param x: feature to be plot as x
+    :param y: feature to be plot as y
+    :param title: title shown on the plot: "Number and percentage of xx"
+    :param df: dataset
+    :param size: to control chart size
+    :param ordered: whether to order the dataset
+    :param horizontally: whether to generate plot horizontally
+    :return: 
+    """
+
+    f, ax = plt.subplots(1,1, figsize=(4*size,4))
+    if df[x].dtype == 'O':
+        num_var = y
+        cat_var = x
+    else:
+        num_var = x
+        cat_var = y
+    total = float(sum(df[num_var]))
+    if ordered:
+        df = df.sort_values(by = num_var, ascending = False)
+    adj_ratio = 2
+    if (size > 2):
+        plt.xticks(rotation=90, size=8)
+        adj_ratio = 1
+    if horizontally:
+        g = sb.barplot(x=num_var, y=cat_var, data=df)
+        for p in ax.patches:
+            width = p.get_width()
+            ax.text(width+50*adj_ratio,
+                    p.get_y() + p.get_height() / 2.,
+                    '{:1.2f}%'.format(100 * width / total),
+                    ha="center")
+    else:
+        g = sb.barplot(x=cat_var, y=num_var, data=df)
+        for p in ax.patches:
+            height = p.get_height()
+            ax.text(p.get_x()+p.get_width()/2.,
+                    height,
+                    '{:1.2f}%'.format(100*height/total),
+                    ha="center")
+    g.set_title("Number and percentage of {}".format(title))
+    plt.show()
+
+
 
 def generate_bar_proportion(data, feature, group_var, color=0, order=False, ascending=False, topn=10, subtitle = None):
     """
