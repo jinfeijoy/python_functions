@@ -1,4 +1,5 @@
 import plotly.express as px
+import pandas as pd
 def static_scatter_map(data, feature, country, continent, title, subtitle):
     """
 
@@ -75,4 +76,50 @@ def static_choro_map(data, feature, country, title, subtitle, colors = 'reds'):
            color='black'
         )
     )
+    fig.show()
+
+    def dynamic_choro_map(data, iso_code, country, feature, date, title):
+        df = data[[iso_code, feature, date, country]]
+        df = df.sort_values(date, ascending=True)
+        df['date'] = pd.to_datetime(df[date], errors='coerce').dt.strftime('%m-%d-%Y')
+        color_range = int(df[feature].quantile(0.95))
+        fig = px.choropleth(
+            df,  # Input Dataframe
+            locations=iso_code,  # identify country code column
+            color=feature,  # identify representing column
+            hover_name=country,  # identify hover name
+            animation_frame=date,
+            color_continuous_scale='viridis',
+            projection="natural earth",  # select projection
+            range_color=[0, color_range],
+            title='<span style="font-size:36px; font-family:Times New Roman">' + title,
+        )  # select range of dataset
+        fig.show()
+
+def dynamic_choro_map(data, iso_code, country, feature, date, title):
+    """
+
+    :param data: dataset
+    :param iso_code: country's iso code variable name
+    :param country: country variable name
+    :param feature: feature need to be shown in the plot
+    :param date: date (object)
+    :param title: title
+    :return:
+    """
+    df = data[[iso_code, feature, date,country]]
+    df = df.sort_values(date, ascending = True)
+    df['date'] = pd.to_datetime(df[date], errors='coerce').dt.strftime('%m-%d-%Y')
+    color_range = int(df[feature].quantile(0.95))
+    fig = px.choropleth(
+        df,                            # Input Dataframe
+        locations=iso_code,           # identify country code column
+        color=feature,                     # identify representing column
+        hover_name=country,              # identify hover name
+        animation_frame=date,
+        color_continuous_scale= 'viridis',
+        projection="natural earth",        # select projection
+        range_color=[0,color_range],
+        title='<span style="font-size:36px; font-family:Times New Roman">'+title,
+    )             # select range of dataset
     fig.show()
