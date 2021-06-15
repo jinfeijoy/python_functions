@@ -18,29 +18,34 @@ def print_bow_example(text, dictionary):
 from scipy.spatial.distance import cosine
 
 
-def get_similarity_cosin(basedata, comparedata, word_col, doc_key, topn=10, filterbase=None):
+def get_similarity_cosin(basedata, comparedata, word_col, doc_key, dataformat = 'long',topn=10, filterbase=None):
     """
     :param basedata: basedata to do comparison
     :param filterdata: compare data to do comparison
     :param key: key used to do left join e.g. ['A'], ['A','B']
     :param doc_key: index key which used to identify rows
+    :param dataformat: whether the input is long table or wide table, long table has column word and value, wide table column name will be words
     :param topn: rows with top n similarity value
     :param filterbase: base or compare or None, to get top n list based on base table unique value or compare table unique value or combination unique value
     :return: a dataset with row doc key and similarity value
     """
-    base = basedata[:]
-    base['dataid'] = 'base'
-    compare = comparedata[:]
-    compare['dataid'] = 'compare'
-    pre_tmp = base.append(compare)
+    if dataformat == 'long':
+        base = basedata.copy()
+        base['dataid'] = 'base'
+        compare = comparedata.copy()
+        compare['dataid'] = 'compare'
+        pre_tmp = base.append(compare)
 
-    joinT = pre_tmp.pivot(index=[doc_key, 'dataid'], columns=word_col).fillna(0).reset_index(level=[0, 1])
-    joinT.columns = [doc_key, 'dataid'] + [i[1] for i in joinT.columns][2:]
+        joinT = pre_tmp.pivot(index=[doc_key, 'dataid'], columns=word_col).fillna(0).reset_index(level=[0, 1])
+        joinT.columns = [doc_key, 'dataid'] + [i[1] for i in joinT.columns][2:]
 
-    baseT = joinT[joinT.dataid == 'base'].drop(columns=['dataid'])
-    baseT = baseT.set_index(doc_key)
-    compareT = joinT[joinT.dataid == 'compare'].drop(columns=['dataid'])
-    compareT = compareT.set_index(doc_key)
+        baseT = joinT[joinT.dataid == 'base'].drop(columns=['dataid'])
+        baseT = baseT.set_index(doc_key)
+        compareT = joinT[joinT.dataid == 'compare'].drop(columns=['dataid'])
+        compareT = compareT.set_index(doc_key)
+    elif dataformat == 'wide':
+        baseT = basedata.copy()
+        compareT = comparedata.copy()
 
     baseindex = []
     compareindex = []
