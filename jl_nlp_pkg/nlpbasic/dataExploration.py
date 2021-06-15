@@ -14,25 +14,60 @@ def print_bow_example(text, dictionary):
     for i in range(len(text)):
         print("Word {} (\"{}\") appears {} time.".format(text[i][0], dictionary[text[i][0]], text[i][1]))
 
-def get_similarity_cosin(basedata, filterdata, key, doc_key, comp_col, topn_output=10):
+
+from scipy.spatial.distance import cosine
+
+
+def get_similarity_cosin(basedata, comparedata, word_col, doc_key, topn=10, filterbase=None):
     """
     :param basedata: basedata to do comparison
     :param filterdata: compare data to do comparison
     :param key: key used to do left join e.g. ['A'], ['A','B']
     :param doc_key: index key which used to identify rows
-    :param comp_col: comparison column e.g.'A'
-    :param topn_topics: rows with top n similarity value
+    :param topn: rows with top n similarity value
+    :param filterbase: base or compare or None, to get top n list based on base table unique value or compare table unique value or combination unique value
     :return: a dataset with row doc key and similarity value
     """
-    basedata['comp_col'] = basedata[comp_col]
-    filterdata['comp_col'] = filterdata[comp_col]
-    merge_data = pd.merge(basedata, filterdata, how='left', left_on=key, right_on=key, suffixes=('_x', '_y'))
-    merge_data.fillna(0, inplace=True)
-    similarity_val = merge_data.groupby([doc_key]).apply(lambda x: 1 - cosine(x['comp_col_x'], x['comp_col_y']))
-    similarity_data = {"doc_key": similarity_val.index, "cosine": similarity_val}
-    similarity_data = pd.DataFrame(similarity_data)
-    similarity_data = similarity_data.sort_values(by=['cosine'], ascending=False).head(topn_output)
-    return similarity_data
+    base = basedata[:]
+    base['dataid'] = 'base'
+    compare = comparedata[:]
+    compare['dataid'] = 'compare'
+    pre_tmp = base.append(compare)
+
+    joinT = pre_tmp.pivot(index=[doc_key, 'dataid'], columns=word_col).fillna(0).reset_index(level=[0, 1])
+    joinT.columns = [doc_key, 'dataid'] + [i[1] for i in joinT.columns][2:]
+
+    baseT = joinT[joinT.dataid == 'base'].drop(columns=['dataid'])
+    baseT = baseT.set_index(doc_key)
+    compareT = joinT[joinT.dataid == 'compare'].drop(columns=['dataid'])
+    compareT = compareT.set_index(doc_key)
+
+    baseindex = []
+    compareindex = []
+    similarity = []
+    for i in range(len(baseT)):
+        for j in range(len(compareT)):
+            baseindex.append(baseT.index[i])
+            compareindex.append(compareT.index[j])
+            similarity.append(1 - cosine(baseT.iloc[[i]], compareT.iloc[[j]]))
+
+    output = pd.DataFrame({'baseindex': baseindex,
+                           'compareindex': compareindex,
+                           'similarity': similarity})
+    output = output[output.similarity < 1].sort_values(by=['similarity'], ascending=False)  # .head(topn)
+
+    if filterbase == None:
+        output['combineid'] = output.baseindex.apply(lambda x: str(x)) + ' ' + output.compareindex.apply(lambda x: str(x))
+        output['combineid'] = output['combineid'].apply(lambda x: sorted([int(i) for i in x.split(' ')]))
+        output = output[~output['combineid'].apply(pd.Series).duplicated()]
+        output = output.drop(columns = ['combineid'])
+    if filterbase == 'base':
+        output = output.drop_duplicates('baseindex')
+    elif filterbase == 'compare':
+        output = output.drop_duplicates('compareindex')
+    output = output.head(topn)
+
+    return output
 
 def text_length_summary(data, col, measure = 'max'):
     """
