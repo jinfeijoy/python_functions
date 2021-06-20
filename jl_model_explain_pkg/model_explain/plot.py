@@ -4,16 +4,26 @@ import numpy as np
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import roc_curve
 
-def cf_matrix_heatmap(cf_matrix):
+def cf_matrix_heatmap(cf_matrix, label):
     """
     :param cf_matrix: confusion matrix
+    :param label: labels for y
     :return:
     """
-    group_names = ['True Neg', 'False Pos', 'False Neg', 'True Pos']
+    group_names = label.copy()
+    group_names.extend(label)
+    group_names.extend(label)
     group_counts = ['{0:0.0f}'.format(value) for value in cf_matrix.flatten()]
-    labels = [f"{v1}\n{v2}" for v1, v2 in zip(group_names, group_counts)]
-    labels = np.asarray(labels).reshape(2, 2)
-    sb.heatmap(cf_matrix, annot=labels, fmt='', cmap='Blues', annot_kws={'fontsize': 16})
+    percentage = ['{0:.2%}'.format(i) for i in cf_matrix.flatten() / sum(cf_matrix.flatten())]
+    labels = [f"{v1}\n{v2}" for v1, v2 in zip(percentage, group_counts)]
+    labels = np.asarray(labels).reshape(len(label), len(label))
+    heatmap = sb.heatmap(cf_matrix, annot=labels,
+               fmt='', cmap='Blues',
+               xticklabels=True, yticklabels=True,
+               annot_kws={'fontsize': 16})
+    heatmap.set_xticklabels(label)
+    heatmap.set_yticklabels(label)
+
 
 def plot_randomfp_roc(x_train, y_train, x_val, y_val, pred_val_prob, model_label = 'Model'):
     random_predictions = DummyClassifier(strategy = 'stratified')
