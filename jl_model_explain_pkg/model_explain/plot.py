@@ -4,10 +4,11 @@ import numpy as np
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import roc_curve
 
-def cf_matrix_heatmap(cf_matrix, label):
+def cf_matrix_heatmap(cf_matrix, label, size = 7):
     """
     :param cf_matrix: confusion matrix
     :param label: labels for y
+    :param size: plot size in inch
     :return:
     """
     group_names = label.copy()
@@ -17,6 +18,7 @@ def cf_matrix_heatmap(cf_matrix, label):
     percentage = ['{0:.2%}'.format(i) for i in cf_matrix.flatten() / sum(cf_matrix.flatten())]
     labels = [f"{v1}\n{v2}" for v1, v2 in zip(percentage, group_counts)]
     labels = np.asarray(labels).reshape(len(label), len(label))
+    fig, ax = plt.subplots(figsize=(size,size))
     heatmap = sb.heatmap(cf_matrix, annot=labels,
                fmt='', cmap='Blues',
                xticklabels=True, yticklabels=True,
