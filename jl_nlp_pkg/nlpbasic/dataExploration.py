@@ -15,10 +15,8 @@ def print_bow_example(text, dictionary):
         print("Word {} (\"{}\") appears {} time.".format(text[i][0], dictionary[text[i][0]], text[i][1]))
 
 
-from scipy.spatial.distance import cosine
 
-
-def get_similarity_cosin(basedata, comparedata, word_col, doc_key, dataformat = 'long',topn=10, filterbase=None):
+def get_similarity_cosin(basedata, comparedata, word_col, doc_key, dataformat = 'long',topn=10, filterbase=None, index_is_int = True):
     """
     :param basedata: basedata to do comparison
     :param filterdata: compare data to do comparison
@@ -63,7 +61,8 @@ def get_similarity_cosin(basedata, comparedata, word_col, doc_key, dataformat = 
 
     if filterbase == None:
         output['combineid'] = output.baseindex.apply(lambda x: str(x)) + ' ' + output.compareindex.apply(lambda x: str(x))
-        output['combineid'] = output['combineid'].apply(lambda x: sorted([int(i) for i in x.split(' ')]))
+        if index_is_int == True:
+            output['combineid'] = output['combineid'].apply(lambda x: sorted([int(i) for i in x.split(' ')]))
         output = output[~output['combineid'].apply(pd.Series).duplicated()]
         output = output.drop(columns = ['combineid'])
     if filterbase == 'base':
