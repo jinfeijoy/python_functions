@@ -52,7 +52,7 @@ def create_corpus_vector(corpus, dictionary):
 
 def get_vocab_matrix(document_vector, vocabulary):
     """
-    :param document_vector: bow_corpus generated from generate_corpus_dict
+    :param document_vector: bow_corpus generated from create_document_vector
     :param vocabulary: dictionary generated from generate_corpus_dict
     :return: term document matrix
     """
