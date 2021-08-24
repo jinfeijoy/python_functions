@@ -116,7 +116,7 @@ def dynamic_choro_map(data, iso_code, country, feature, date, title):
         locations=iso_code,           # identify country code column
         color=feature,                     # identify representing column
         hover_name=country,              # identify hover name
-        animation_frame=date,
+        animation_frame='date',
         color_continuous_scale= 'viridis',
         projection="natural earth",        # select projection
         range_color=[0,color_range],
