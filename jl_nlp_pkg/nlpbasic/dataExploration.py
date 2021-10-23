@@ -1,7 +1,8 @@
 import numpy as np
 import statistics
 import nltk
-from wordcloud import WordCloud, STOPWORDS
+from PIL import Image
+from wordcloud import WordCloud, STOPWORDS,ImageColorGenerator
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.spatial.distance import cosine
@@ -131,4 +132,41 @@ def generate_word_cloud(corpus):
     plt.show()
 
 
+def generate_chinese_word_cloud(text, img_link, font_path, stopwords = '',
+                                color_control = False, contour_color = 'white', save = False):
+    """
 
+    :param text: corpus with space as split
+    :param img_link: background image path
+    :param font_path: chinese font path (e.g. simsun.ttf)
+    :param stopwords: stopwords list
+    :param color_control: True: use same color as background, false: use default color
+    :param contour_color: color name of contour, default is white, can be changed to e.g. 'green','pink',etc
+    :param save: to save img to current folder or not, default is false
+    :return:
+    """
+    backgroud = np.array(Image.open(img_link))
+
+    wc = WordCloud(width=800, height=800,
+            background_color='white',
+            mode='RGB',
+            mask=backgroud, #添加蒙版，生成指定形状的词云，并且词云图的颜色可从蒙版里提取
+            contour_width=3,
+            contour_color=contour_color,
+            max_words=500,
+            stopwords=STOPWORDS.add(stopwords),#内置的屏蔽词,并添加自己设置的词语
+            font_path=font_path,
+            max_font_size=150,
+            relative_scaling=0.6, #设置字体大小与词频的关联程度为0.4
+            random_state=50,
+            scale=2
+            ).generate(text)
+    if color_control == True:
+        image_color = ImageColorGenerator(backgroud)#设置生成词云的颜色，如去掉这两行则字体为默认颜色
+        wc.recolor(color_func=image_color)
+
+    plt.imshow(wc) #显示词云
+    plt.axis('off') #关闭x,y轴
+    plt.show()#显示
+    if save == True:
+        wc.to_file('word_cloud.jpg')
